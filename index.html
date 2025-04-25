@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agro Farming</title>
+  <title>AGRO IMPERIUM</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -47,10 +47,17 @@
       font-size: 16px;
       cursor: pointer;
     }
+    .seed {
+      margin: 10px;
+      padding: 10px;
+      background-color: #8b4513;
+      color: white;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
-  <h1>Agro Farming Sim</h1>
+  <h1>AGRO IMPERIUM</h1>
   <div id="money">Dinheiro: R$ <span id="cash">0</span></div>
 
   <div id="store">
@@ -59,6 +66,13 @@
     <button onclick="buyWorker()">Contratar trabalhador (R$100)</button>
     <div>Terrenos disponíveis: <span id="tilesCount">5</span></div>
     <div>Trabalhadores: <span id="workersCount">0</span></div>
+    
+    <div class="seed">
+      <button onclick="buySeed(15)">Comprar Semente de Abóbora (R$15)</button>
+    </div>
+    <div class="seed">
+      <button onclick="buySeed(20)">Comprar Semente de Melancia (R$20)</button>
+    </div>
   </div>
 
   <div id="farm"></div>
@@ -73,6 +87,7 @@
     let maxTiles = 5;
     let workers = 0;
     const tiles = [];
+    let seedPrice = 0;
 
     function updateUI() {
       cashDisplay.textContent = money;
@@ -138,6 +153,17 @@
         money -= 100;
         workers++;
         updateUI();
+      } else {
+        alert('Dinheiro insuficiente!');
+      }
+    }
+
+    function buySeed(price) {
+      if (money >= price) {
+        money -= price;
+        seedPrice = price;
+        updateUI();
+        alert(`Você comprou uma semente de preço R$${price}`);
       } else {
         alert('Dinheiro insuficiente!');
       }
