@@ -68,10 +68,10 @@
     <div>Trabalhadores: <span id="workersCount">0</span></div>
     
     <div class="seed">
-      <button onclick="buySeed(15)">Comprar Semente de Abóbora (R$15)</button>
+      <button onclick="buySeed('abobora', 15)">Comprar Semente de Abóbora (R$15)</button>
     </div>
     <div class="seed">
-      <button onclick="buySeed(20)">Comprar Semente de Melancia (R$20)</button>
+      <button onclick="buySeed('melancia', 20)" id="buyMelanciaBtn" disabled>Comprar Semente de Melancia (R$20)</button>
     </div>
   </div>
 
@@ -82,24 +82,30 @@
     const cashDisplay = document.getElementById('cash');
     const tilesCountDisplay = document.getElementById('tilesCount');
     const workersCountDisplay = document.getElementById('workersCount');
+    const buyMelanciaBtn = document.getElementById('buyMelanciaBtn');
 
     let money = 0;
     let maxTiles = 5;
     let workers = 0;
-    const tiles = [];
-    let seedPrice = 0;
+    let hasAbobora = false;
+    let hasMelancia = false;
+    let tiles = [];
+    let currentSeed = 'milho'; // Começa com a semente de milho
 
     function updateUI() {
       cashDisplay.textContent = money;
       tilesCountDisplay.textContent = maxTiles;
       workersCountDisplay.textContent = workers;
+
+      // Habilitar/desabilitar botão de melancia baseado na compra da abóbora
+      buyMelanciaBtn.disabled = !hasAbobora;
     }
 
     function createTile() {
       const tile = document.createElement('div');
       tile.className = 'tile';
       tile.dataset.state = 'empty';
-      tile.textContent = '🌱';
+      tile.textContent = getSeedIcon(currentSeed);
       tile.addEventListener('click', () => handleClick(tile));
       farm.appendChild(tile);
       tiles.push(tile);
@@ -117,15 +123,26 @@
       }
     }
 
+    function getSeedIcon(seed) {
+      switch(seed) {
+        case 'abobora':
+          return '🎃'; // Abóbora
+        case 'melancia':
+          return '🍉'; // Melancia
+        default:
+          return '🌽'; // Milho
+      }
+    }
+
     function plant(tile, fast = false) {
       tile.classList.add('planted');
       tile.dataset.state = 'planted';
-      tile.textContent = '🌾';
+      tile.textContent = getSeedIcon(currentSeed);
       setTimeout(() => {
         tile.classList.remove('planted');
         tile.classList.add('grown');
         tile.dataset.state = 'grown';
-        tile.textContent = '🌽';
+        tile.textContent = getSeedIcon(currentSeed);
       }, fast ? 3000 : 5000);
     }
 
@@ -133,7 +150,15 @@
       tile.classList.remove('grown');
       tile.dataset.state = 'empty';
       tile.textContent = '🌱';
-      money += 10;
+      
+      let harvestValue = 10; // Valor default do milho
+      if (currentSeed === 'abobora') {
+        harvestValue = 15;
+      } else if (currentSeed === 'melancia') {
+        harvestValue = 20;
+      }
+      
+      money += harvestValue;
       updateUI();
     }
 
@@ -158,12 +183,21 @@
       }
     }
 
-    function buySeed(price) {
+    function buySeed(seed, price) {
       if (money >= price) {
         money -= price;
-        seedPrice = price;
+        if (seed === 'abobora') {
+          hasAbobora = true;
+          currentSeed = 'abobora';
+        } else if (seed === 'melancia' && hasAbobora) {
+          hasMelancia = true;
+          currentSeed = 'melancia';
+        } else {
+          alert('Você precisa comprar a semente de abóbora antes!');
+          return;
+        }
         updateUI();
-        alert(`Você comprou uma semente de preço R$${price}`);
+        alert(`Você comprou a semente de ${seed}!`);
       } else {
         alert('Dinheiro insuficiente!');
       }
