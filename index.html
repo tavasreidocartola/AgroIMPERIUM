@@ -1,1 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agro Farming Sim</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #c9f0c5;
+    }
+    #farm {
+      display: grid;
+      grid-template-columns: repeat(5, 80px);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+    .tile {
+      width: 80px;
+      height: 80px;
+      background-color: #7cfc00;
+      border: 2px solid #4CAF50;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .planted {
+      background-color: #deb887;
+    }
+    .grown {
+      background-color: #f4d03f;
+    }
+    #money {
+      font-size: 20px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Agro Farming Sim</h1>
+  <div id="money">Dinheiro: R$ <span id="cash">0</span></div>
+  <div id="farm"></div>
+
+  <script>
+    const farm = document.getElementById('farm');
+    const cashDisplay = document.getElementById('cash');
+    let money = 0;
+    const tiles = [];
+
+    for (let i = 0; i < 25; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.dataset.state = 'empty';
+      tile.addEventListener('click', () => handleClick(tile));
+      farm.appendChild(tile);
+      tiles.push(tile);
+    }
+
+    function handleClick(tile) {
+      if (tile.dataset.state === 'empty') {
+        tile.classList.add('planted');
+        tile.dataset.state = 'planted';
+        setTimeout(() => {
+          tile.classList.remove('planted');
+          tile.classList.add('grown');
+          tile.dataset.state = 'grown';
+        }, 5000);
+      } else if (tile.dataset.state === 'grown') {
+        tile.classList.remove('grown');
+        tile.dataset.state = 'empty';
+        money += 10;
+        cashDisplay.textContent = money;
+      }
+    }
+  </script>
+</body>
+</html>
 
