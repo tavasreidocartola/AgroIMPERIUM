@@ -62,16 +62,18 @@
 
   <div id="store">
     <h2>Loja</h2>
-    <button onclick="buyTile()">Comprar terreno (R$50)</button>
-    <button onclick="buyWorker()">Contratar trabalhador (R$100)</button>
+    <button onclick="buyTile()">Comprar terreno (R$50)</button><br>
+    <button onclick="buyWorker()">Contratar trabalhador (plantar automático) (R$750)</button><br>
+    <button onclick="buyHarvester()">Contratar colheitadeira automática (R$1000)</button>
     <div>Terrenos disponíveis: <span id="tilesCount">5</span></div>
-    <div>Trabalhadores: <span id="workersCount">0</span></div>
+    <div>Trabalhadores plantadores: <span id="workersCount">0</span></div>
+    <div>Trabalhadores colhedores: <span id="harvestersCount">0</span></div>
     
     <div class="seed">
-      <button onclick="buySeed('abobora', 15)">Comprar Semente de Abóbora (R$15)</button>
+      <button onclick="buySeed('abobora', 200)">Comprar Semente de Abóbora (R$200)</button>
     </div>
     <div class="seed">
-      <button onclick="buySeed('melancia', 20)" id="buyMelanciaBtn" disabled>Comprar Semente de Melancia (R$20)</button>
+      <button onclick="buySeed('melancia', 350)" id="buyMelanciaBtn" disabled>Comprar Semente de Melancia (R$350)</button>
     </div>
   </div>
 
@@ -82,22 +84,23 @@
     const cashDisplay = document.getElementById('cash');
     const tilesCountDisplay = document.getElementById('tilesCount');
     const workersCountDisplay = document.getElementById('workersCount');
+    const harvestersCountDisplay = document.getElementById('harvestersCount');
     const buyMelanciaBtn = document.getElementById('buyMelanciaBtn');
 
     let money = 0;
     let maxTiles = 5;
     let workers = 0;
+    let harvesters = 0;
     let hasAbobora = false;
     let hasMelancia = false;
     let tiles = [];
-    let currentSeed = 'milho'; // Começa com a semente de milho
+    let currentSeed = 'milho'; // Começa com milho
 
     function updateUI() {
       cashDisplay.textContent = money;
       tilesCountDisplay.textContent = maxTiles;
       workersCountDisplay.textContent = workers;
-
-      // Habilitar/desabilitar botão de melancia baseado na compra da abóbora
+      harvestersCountDisplay.textContent = harvesters;
       buyMelanciaBtn.disabled = !hasAbobora;
     }
 
@@ -105,7 +108,7 @@
       const tile = document.createElement('div');
       tile.className = 'tile';
       tile.dataset.state = 'empty';
-      tile.textContent = getSeedIcon(currentSeed);
+      tile.textContent = '🌱';
       tile.addEventListener('click', () => handleClick(tile));
       farm.appendChild(tile);
       tiles.push(tile);
@@ -125,36 +128,36 @@
 
     function getSeedIcon(seed) {
       switch(seed) {
-        case 'abobora':
-          return '🎃'; // Abóbora
-        case 'melancia':
-          return '🍉'; // Melancia
-        default:
-          return '🌽'; // Milho
+        case 'abobora': return '🎃';
+        case 'melancia': return '🍉';
+        default: return '🌽';
       }
     }
 
     function plant(tile, fast = false) {
       tile.classList.add('planted');
       tile.dataset.state = 'planted';
+      tile.dataset.seed = currentSeed;
       tile.textContent = getSeedIcon(currentSeed);
+
       setTimeout(() => {
         tile.classList.remove('planted');
         tile.classList.add('grown');
         tile.dataset.state = 'grown';
-        tile.textContent = getSeedIcon(currentSeed);
+        tile.textContent = getSeedIcon(tile.dataset.seed);
       }, fast ? 3000 : 5000);
     }
 
     function harvest(tile) {
+      const seed = tile.dataset.seed;
       tile.classList.remove('grown');
       tile.dataset.state = 'empty';
       tile.textContent = '🌱';
-      
-      let harvestValue = 10; // Valor default do milho
-      if (currentSeed === 'abobora') {
+
+      let harvestValue = 10;
+      if (seed === 'abobora') {
         harvestValue = 15;
-      } else if (currentSeed === 'melancia') {
+      } else if (seed === 'melancia') {
         harvestValue = 20;
       }
       
@@ -174,9 +177,19 @@
     }
 
     function buyWorker() {
-      if (money >= 100) {
-        money -= 100;
+      if (money >= 750) {
+        money -= 750;
         workers++;
+        updateUI();
+      } else {
+        alert('Dinheiro insuficiente!');
+      }
+    }
+
+    function buyHarvester() {
+      if (money >= 1000) {
+        money -= 1000;
+        harvesters++;
         updateUI();
       } else {
         alert('Dinheiro insuficiente!');
@@ -203,6 +216,7 @@
       }
     }
 
+    // Trabalhadores que PLANTAM automaticamente
     setInterval(() => {
       if (workers > 0) {
         let planted = 0;
@@ -210,6 +224,19 @@
           if (tile.dataset.state === 'empty' && planted < workers) {
             plant(tile, true);
             planted++;
+          }
+        });
+      }
+    }, 2000);
+
+    // Trabalhadores que COLHEM automaticamente
+    setInterval(() => {
+      if (harvesters > 0) {
+        let harvested = 0;
+        tiles.forEach(tile => {
+          if (tile.dataset.state === 'grown' && harvested < harvesters) {
+            harvest(tile);
+            harvested++;
           }
         });
       }
