@@ -9,6 +9,11 @@
       font-family: Arial, sans-serif;
       text-align: center;
       background: #c9f0c5;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      margin-top: 20px;
     }
     #farm {
       display: grid;
@@ -54,11 +59,50 @@
       color: white;
       font-size: 16px;
     }
+    #achievementsPanel {
+      background: white;
+      border: 2px solid #4CAF50;
+      padding: 20px;
+      width: 300px;
+      margin: 20px auto;
+      display: none;
+    }
+    .achievement {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .locked {
+      color: gray;
+      opacity: 0.5;
+    }
+    #popup {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #4CAF50;
+      color: white;
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-size: 20px;
+      display: none;
+      z-index: 999;
+      animation: fade 4s forwards;
+    }
+    @keyframes fade {
+      0% {opacity: 1;}
+      80% {opacity: 1;}
+      100% {opacity: 0;}
+    }
   </style>
 </head>
 <body>
+
   <h1>AGRO IMPERIUM</h1>
   <div id="money">Dinheiro: R$ <span id="cash">0</span></div>
+  <button onclick="toggleAchievements()">Ver Conquistas 🏆</button>
 
   <div id="store">
     <h2>Loja</h2>
@@ -79,170 +123,212 @@
 
   <div id="farm"></div>
 
-  <script>
-    const farm = document.getElementById('farm');
-    const cashDisplay = document.getElementById('cash');
-    const tilesCountDisplay = document.getElementById('tilesCount');
-    const workersCountDisplay = document.getElementById('workersCount');
-    const harvestersCountDisplay = document.getElementById('harvestersCount');
-    const buyMelanciaBtn = document.getElementById('buyMelanciaBtn');
+  <div id="achievementsPanel"></div>
 
-    let money = 0;
-    let maxTiles = 5;
-    let workers = 0;
-    let harvesters = 0;
-    let hasAbobora = false;
-    let hasMelancia = false;
-    let tiles = [];
-    let currentSeed = 'milho'; // Começa com milho
+  <div id="popup"></div>
 
-    function updateUI() {
-      cashDisplay.textContent = money;
-      tilesCountDisplay.textContent = maxTiles;
-      workersCountDisplay.textContent = workers;
-      harvestersCountDisplay.textContent = harvesters;
-      buyMelanciaBtn.disabled = !hasAbobora;
+<script>
+  const farm = document.getElementById('farm');
+  const cashDisplay = document.getElementById('cash');
+  const tilesCountDisplay = document.getElementById('tilesCount');
+  const workersCountDisplay = document.getElementById('workersCount');
+  const harvestersCountDisplay = document.getElementById('harvestersCount');
+  const buyMelanciaBtn = document.getElementById('buyMelanciaBtn');
+  const achievementsPanel = document.getElementById('achievementsPanel');
+  const popup = document.getElementById('popup');
+
+  let money = 0;
+  let maxTiles = 5;
+  let workers = 0;
+  let harvesters = 0;
+  let hasAbobora = false;
+  let hasMelancia = false;
+  let tiles = [];
+  let currentSeed = 'milho';
+
+  let achievements = [
+    { id: 'firstProfit', name: 'Primeiros Lucros', condition: () => money >= 100, unlocked: false },
+    { id: 'richFarmer', name: 'Mestre Agricultor', condition: () => money >= 1000, unlocked: false },
+    { id: 'landLord', name: 'Senhor das Terras', condition: () => maxTiles >= 10, unlocked: false },
+    { id: 'armyOfWorkers', name: 'Exército Verde', condition: () => workers >= 5, unlocked: false },
+    { id: 'perfectHarvest', name: 'Colheita Perfeita', condition: () => harvesters >= 3, unlocked: false },
+    { id: 'rareSeeds', name: 'Sementes Raras', condition: () => hasAbobora, unlocked: false },
+    { id: 'goldHarvest', name: 'Safra de Ouro', condition: () => hasMelancia, unlocked: false },
+    { id: 'supremeFarmer', name: 'Fazendeiro Supremo', condition: () => maxTiles >= 20 && money >= 5000, unlocked: false },
+  ];
+
+  function updateUI() {
+    cashDisplay.textContent = money;
+    tilesCountDisplay.textContent = maxTiles;
+    workersCountDisplay.textContent = workers;
+    harvestersCountDisplay.textContent = harvesters;
+    buyMelanciaBtn.disabled = !hasAbobora;
+    updateAchievements();
+  }
+
+  function createTile() {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.state = 'empty';
+    tile.textContent = '🌱';
+    tile.addEventListener('click', () => handleClick(tile));
+    farm.appendChild(tile);
+    tiles.push(tile);
+  }
+
+  for (let i = 0; i < maxTiles; i++) {
+    createTile();
+  }
+
+  function handleClick(tile) {
+    if (tile.dataset.state === 'empty') {
+      plant(tile);
+    } else if (tile.dataset.state === 'grown') {
+      harvest(tile);
     }
+  }
 
-    function createTile() {
-      const tile = document.createElement('div');
-      tile.className = 'tile';
-      tile.dataset.state = 'empty';
-      tile.textContent = '🌱';
-      tile.addEventListener('click', () => handleClick(tile));
-      farm.appendChild(tile);
-      tiles.push(tile);
+  function getSeedIcon(seed) {
+    switch(seed) {
+      case 'abobora': return '🎃';
+      case 'melancia': return '🍉';
+      default: return '🌽';
     }
+  }
 
-    for (let i = 0; i < maxTiles; i++) {
-      createTile();
+  function plant(tile, fast = false) {
+    tile.classList.add('planted');
+    tile.dataset.state = 'planted';
+    tile.dataset.seed = currentSeed;
+    tile.textContent = getSeedIcon(currentSeed);
+
+    setTimeout(() => {
+      tile.classList.remove('planted');
+      tile.classList.add('grown');
+      tile.dataset.state = 'grown';
+      tile.textContent = getSeedIcon(tile.dataset.seed);
+    }, fast ? 3000 : 5000);
+  }
+
+  function harvest(tile) {
+    const seed = tile.dataset.seed;
+    tile.classList.remove('grown');
+    tile.dataset.state = 'empty';
+    tile.textContent = '🌱';
+
+    let harvestValue = 10;
+    if (seed === 'abobora') {
+      harvestValue = 15;
+    } else if (seed === 'melancia') {
+      harvestValue = 20;
     }
-
-    function handleClick(tile) {
-      if (tile.dataset.state === 'empty') {
-        plant(tile);
-      } else if (tile.dataset.state === 'grown') {
-        harvest(tile);
-      }
-    }
-
-    function getSeedIcon(seed) {
-      switch(seed) {
-        case 'abobora': return '🎃';
-        case 'melancia': return '🍉';
-        default: return '🌽';
-      }
-    }
-
-    function plant(tile, fast = false) {
-      tile.classList.add('planted');
-      tile.dataset.state = 'planted';
-      tile.dataset.seed = currentSeed;
-      tile.textContent = getSeedIcon(currentSeed);
-
-      setTimeout(() => {
-        tile.classList.remove('planted');
-        tile.classList.add('grown');
-        tile.dataset.state = 'grown';
-        tile.textContent = getSeedIcon(tile.dataset.seed);
-      }, fast ? 3000 : 5000);
-    }
-
-    function harvest(tile) {
-      const seed = tile.dataset.seed;
-      tile.classList.remove('grown');
-      tile.dataset.state = 'empty';
-      tile.textContent = '🌱';
-
-      let harvestValue = 10;
-      if (seed === 'abobora') {
-        harvestValue = 15;
-      } else if (seed === 'melancia') {
-        harvestValue = 20;
-      }
-      
-      money += harvestValue;
-      updateUI();
-    }
-
-    function buyTile() {
-      if (money >= 50) {
-        money -= 50;
-        maxTiles++;
-        createTile();
-        updateUI();
-      } else {
-        alert('Dinheiro insuficiente!');
-      }
-    }
-
-    function buyWorker() {
-      if (money >= 750) {
-        money -= 750;
-        workers++;
-        updateUI();
-      } else {
-        alert('Dinheiro insuficiente!');
-      }
-    }
-
-    function buyHarvester() {
-      if (money >= 1000) {
-        money -= 1000;
-        harvesters++;
-        updateUI();
-      } else {
-        alert('Dinheiro insuficiente!');
-      }
-    }
-
-    function buySeed(seed, price) {
-      if (money >= price) {
-        money -= price;
-        if (seed === 'abobora') {
-          hasAbobora = true;
-          currentSeed = 'abobora';
-        } else if (seed === 'melancia' && hasAbobora) {
-          hasMelancia = true;
-          currentSeed = 'melancia';
-        } else {
-          alert('Você precisa comprar a semente de abóbora antes!');
-          return;
-        }
-        updateUI();
-        alert(`Você comprou a semente de ${seed}!`);
-      } else {
-        alert('Dinheiro insuficiente!');
-      }
-    }
-
-    // Trabalhadores que PLANTAM automaticamente
-    setInterval(() => {
-      if (workers > 0) {
-        let planted = 0;
-        tiles.forEach(tile => {
-          if (tile.dataset.state === 'empty' && planted < workers) {
-            plant(tile, true);
-            planted++;
-          }
-        });
-      }
-    }, 2000);
-
-    // Trabalhadores que COLHEM automaticamente
-    setInterval(() => {
-      if (harvesters > 0) {
-        let harvested = 0;
-        tiles.forEach(tile => {
-          if (tile.dataset.state === 'grown' && harvested < harvesters) {
-            harvest(tile);
-            harvested++;
-          }
-        });
-      }
-    }, 2000);
-
+    
+    money += harvestValue;
     updateUI();
-  </script>
+  }
+
+  function buyTile() {
+    if (money >= 50) {
+      money -= 50;
+      maxTiles++;
+      createTile();
+      updateUI();
+    } else {
+      alert('Dinheiro insuficiente!');
+    }
+  }
+
+  function buyWorker() {
+    if (money >= 750) {
+      money -= 750;
+      workers++;
+      updateUI();
+    } else {
+      alert('Dinheiro insuficiente!');
+    }
+  }
+
+  function buyHarvester() {
+    if (money >= 1000) {
+      money -= 1000;
+      harvesters++;
+      updateUI();
+    } else {
+      alert('Dinheiro insuficiente!');
+    }
+  }
+
+  function buySeed(seed, price) {
+    if (money >= price) {
+      money -= price;
+      if (seed === 'abobora') {
+        hasAbobora = true;
+        currentSeed = 'abobora';
+      } else if (seed === 'melancia' && hasAbobora) {
+        hasMelancia = true;
+        currentSeed = 'melancia';
+      } else {
+        alert('Você precisa comprar a semente de abóbora antes!');
+        return;
+      }
+      updateUI();
+      alert(`Você comprou a semente de ${seed}!`);
+    } else {
+      alert('Dinheiro insuficiente!');
+    }
+  }
+
+  function toggleAchievements() {
+    achievementsPanel.style.display = achievementsPanel.style.display === 'none' ? 'block' : 'none';
+    updateAchievements();
+  }
+
+  function updateAchievements() {
+    achievementsPanel.innerHTML = '<h2>Conquistas</h2>';
+    achievements.forEach(ach => {
+      if (!ach.unlocked && ach.condition()) {
+        ach.unlocked = true;
+        showPopup(`🏆 Conquista desbloqueada: ${ach.name}`);
+      }
+      const div = document.createElement('div');
+      div.className = 'achievement' + (ach.unlocked ? '' : ' locked');
+      div.innerText = ach.name;
+      achievementsPanel.appendChild(div);
+    });
+  }
+
+  function showPopup(message) {
+    popup.textContent = message;
+    popup.style.display = 'block';
+    setTimeout(() => {
+      popup.style.display = 'none';
+    }, 4000);
+  }
+
+  // Auto ações
+  setInterval(() => {
+    if (workers > 0) {
+      let planted = 0;
+      tiles.forEach(tile => {
+        if (tile.dataset.state === 'empty' && planted < workers) {
+          plant(tile, true);
+          planted++;
+        }
+      });
+    }
+    if (harvesters > 0) {
+      let harvested = 0;
+      tiles.forEach(tile => {
+        if (tile.dataset.state === 'grown' && harvested < harvesters) {
+          harvest(tile);
+          harvested++;
+        }
+      });
+    }
+  }, 2000);
+
+  updateUI();
+</script>
+
 </body>
 </html>
