@@ -102,7 +102,6 @@
 
   <h1>AGRO IMPERIUM</h1>
   <div id="money">Dinheiro: R$ <span id="cash">0</span></div>
-  <button onclick="toggleAchievements()">Ver Conquistas 🏆</button>
 
   <div id="store">
     <h2>Loja</h2>
@@ -122,6 +121,9 @@
   </div>
 
   <div id="farm"></div>
+
+  <!-- Botão movido para AQUI! -->
+  <button onclick="toggleAchievements()">Ver Conquistas 🏆</button>
 
   <div id="achievementsPanel"></div>
 
@@ -163,7 +165,7 @@
     workersCountDisplay.textContent = workers;
     harvestersCountDisplay.textContent = harvesters;
     buyMelanciaBtn.disabled = !hasAbobora;
-    updateAchievements();
+    checkAchievements();
   }
 
   function createTile() {
@@ -280,20 +282,25 @@
 
   function toggleAchievements() {
     achievementsPanel.style.display = achievementsPanel.style.display === 'none' ? 'block' : 'none';
-    updateAchievements();
+    showAchievements();
   }
 
-  function updateAchievements() {
+  function showAchievements() {
     achievementsPanel.innerHTML = '<h2>Conquistas</h2>';
+    achievements.forEach(ach => {
+      const div = document.createElement('div');
+      div.className = 'achievement' + (ach.unlocked ? '' : ' locked');
+      div.innerText = ach.name;
+      achievementsPanel.appendChild(div);
+    });
+  }
+
+  function checkAchievements() {
     achievements.forEach(ach => {
       if (!ach.unlocked && ach.condition()) {
         ach.unlocked = true;
         showPopup(`🏆 Conquista desbloqueada: ${ach.name}`);
       }
-      const div = document.createElement('div');
-      div.className = 'achievement' + (ach.unlocked ? '' : ' locked');
-      div.innerText = ach.name;
-      achievementsPanel.appendChild(div);
     });
   }
 
@@ -305,7 +312,6 @@
     }, 4000);
   }
 
-  // Auto ações
   setInterval(() => {
     if (workers > 0) {
       let planted = 0;
