@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Agro Imperium</title>
   <style>
     body {
@@ -53,10 +53,22 @@
       border: 1px solid #000;
       display: none;
     }
+    @media (max-width: 600px) {
+      .tile {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+        margin: 3px;
+      }
+    }
   </style>
 </head>
 <body>
   <h1>Agro Imperium 🌾</h1>
+  <audio autoplay loop>
+    <source src="https://www.fesliyanstudios.com/play-mp3/387" type="audio/mp3">
+    Seu navegador não suporta áudio HTML5.
+  </audio>
   <p>Dinheiro: R$ <span id="cash">0</span></p>
   <p>Terrenos: <span id="tilesCount">5</span></p>
   <p>Trabalhadores: <span id="workersCount">0</span></p>
@@ -70,6 +82,9 @@
     <button onclick="setSeed('milho')">Milho 🌽</button>
     <button onclick="buyAbobora()">Comprar Abóbora (R$500)</button>
     <button onclick="buyMelancia()" id="buyMelanciaBtn">Comprar Melancia (R$1000)</button>
+  </div>
+  <div>
+    <button onclick="resetGame()">Novo Jogo</button>
   </div>
   <div id="farm"></div>
   <h2>Conquistas</h2>
@@ -109,11 +124,12 @@
     function showPopup(text) {
       popup.textContent = text;
       popup.style.display = 'block';
-      setTimeout(() => { popup.style.display = 'none'; }, 3000);
+      setTimeout(() => { popup.style.display = 'none'; }, 4000);
     }
 
     function setSeed(seed) {
       currentSeed = seed;
+      showPopup(`🌱 Semente selecionada: ${seed}`);
     }
 
     function getSeedIcon(seed) {
@@ -124,11 +140,14 @@
       }
     }
 
-    function createTile() {
+    function createTile(state = 'empty', seed = null) {
       const tile = document.createElement('div');
       tile.className = 'tile';
-      tile.dataset.state = 'empty';
-      tile.textContent = '🌱';
+      tile.dataset.state = state;
+      tile.dataset.seed = seed || '';
+      tile.textContent = state === 'grown' ? getSeedIcon(seed) : '🌱';
+      if (state === 'planted') tile.classList.add('planted');
+      if (state === 'grown') tile.classList.add('grown');
       tile.addEventListener('click', () => handleClick(tile));
       farm.appendChild(tile);
       tiles.push(tile);
@@ -140,6 +159,7 @@
     }
 
     function plant(tile, fast = false) {
+      if (tile.dataset.state !== 'empty') return;
       tile.dataset.state = 'planted';
       tile.dataset.seed = currentSeed;
       tile.textContent = getSeedIcon(currentSeed);
@@ -200,6 +220,7 @@
         hasAbobora = true;
         setSeed('abobora');
         updateUI();
+        showPopup('🎃 Abóbora desbloqueada!');
       } else {
         alert('Dinheiro insuficiente!');
       }
@@ -212,6 +233,7 @@
         hasMelancia = true;
         setSeed('melancia');
         updateUI();
+        showPopup('🍉 Melancia desbloqueada!');
       } else {
         alert('Dinheiro insuficiente!');
       }
@@ -243,6 +265,10 @@
     }
 
     function saveGame() {
+      const tileData = tiles.map(tile => ({
+        state: tile.dataset.state,
+        seed: tile.dataset.seed
+      }));
       const data = {
         money,
         maxTiles,
@@ -251,7 +277,8 @@
         hasAbobora,
         hasMelancia,
         currentSeed,
-        achievements
+        achievements,
+        tileData
       };
       localStorage.setItem('agroImperiumSave', JSON.stringify(data));
     }
@@ -267,21 +294,27 @@
       hasMelancia = data.hasMelancia;
       currentSeed = data.currentSeed;
       achievements = data.achievements;
+      if (data.tileData) {
+        data.tileData.forEach(t => createTile(t.state, t.seed));
+      } else {
+        for (let i = 0; i < maxTiles; i++) createTile();
+      }
+    }
+
+    function resetGame() {
+      localStorage.removeItem('agroImperiumSave');
+      location.reload();
     }
 
     function autoPlay() {
       tiles.forEach(tile => {
-        if (tile.dataset.state === 'empty') {
-          for (let i = 0; i < workers; i++) plant(tile, true);
-        }
-        if (tile.dataset.state === 'grown') {
-          for (let i = 0; i < harvesters; i++) harvest(tile);
-        }
+        if (tile.dataset.state === 'empty' && workers > 0) plant(tile, true);
+        if (tile.dataset.state === 'grown' && harvesters > 0) harvest(tile);
       });
     }
 
     loadGame();
-    for (let i = 0; i < maxTiles; i++) createTile();
+    if (tiles.length === 0) for (let i = 0; i < maxTiles; i++) createTile();
     updateUI();
     setInterval(autoPlay, 2000);
     setInterval(saveGame, 5000);
